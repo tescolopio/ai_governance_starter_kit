@@ -1,0 +1,250 @@
+# AI Model Registry - Governance-as-Code
+# This file tracks all AI/ML models in production or development
+# Compliant with SR 11-7 (Supervisory Guidance on Model Risk Management)
+
+# Schema version for tracking changes to the registry structure
+schema_version: "1.0.0"
+
+# Model Registry Entries
+models:
+  # Example: Credit Risk Model
+  - model_id: "credit-risk-v2"
+    name: "Credit Risk Assessment Model"
+    version: "2.1.0"
+    
+    # Ownership & Accountability
+    owner:
+      team: "Risk Analytics"
+      contact: "risk-analytics@example.com"
+      technical_lead: "jane.doe@example.com"
+      model_validator: "compliance-team@example.com"
+    
+    # Risk Classification (SR 11-7 Tier System)
+    risk_tier: "high"  # Options: low, medium, high, critical
+    risk_assessment:
+      date: "2024-12-15"
+      reviewer: "compliance-team@example.com"
+      rationale: "Direct impact on lending decisions, regulatory reporting"
+      business_impact: "Material financial and reputational risk"
+      regulatory_scope: ["SR 11-7", "FCRA", "ECOA"]
+    
+    # Model Lineage & Provenance
+    lineage:
+      training_data:
+        - name: "historical_loan_data"
+          version: "2023-Q4"
+          source: "data-warehouse/loans"
+          pii_flag: true
+          retention_policy: "7 years"
+      
+      framework: "scikit-learn"
+      framework_version: "1.3.2"
+      
+      dependencies:
+        - "pandas==2.1.0"
+        - "numpy==1.24.3"
+        - "xgboost==2.0.1"
+      
+      base_model: "credit-risk-v1"
+      derived_from: "baseline-logistic-regression"
+      
+      training_pipeline:
+        repository: "github.com/example/ml-pipelines"
+        commit_hash: "a1b2c3d4e5f6"
+        trained_date: "2024-11-20"
+        training_duration: "4.5 hours"
+    
+    # Deployment Information
+    deployment:
+      environment: "production"
+      endpoint: "https://api.example.com/v2/credit-risk"
+      deployed_date: "2024-12-01"
+      deployment_method: "blue-green"
+      monitoring_dashboard: "https://monitoring.example.com/credit-risk"
+    
+    # Validation & Testing
+    validation:
+      validation_date: "2024-11-25"
+      validation_status: "approved"
+      test_coverage: "95%"
+      performance_metrics:
+        accuracy: 0.89
+        precision: 0.87
+        recall: 0.91
+        f1_score: 0.89
+        auc_roc: 0.93
+      
+      bias_testing:
+        performed: true
+        date: "2024-11-22"
+        protected_attributes: ["race", "gender", "age"]
+        fairness_metrics:
+          demographic_parity: 0.92
+          equal_opportunity: 0.94
+      
+      stress_testing:
+        performed: true
+        scenarios: ["recession", "default_spike", "data_drift"]
+        results: "passed"
+    
+    # Documentation & Compliance
+    documentation:
+      model_card: "docs/models/credit-risk-v2-model-card.md"
+      technical_docs: "docs/models/credit-risk-v2-technical.md"
+      validation_report: "docs/validation/credit-risk-v2-validation.pdf"
+      risk_assessment: "docs/risk/credit-risk-v2-assessment.pdf"
+    
+    # Monitoring & Alerting
+    monitoring:
+      performance_monitoring: true
+      drift_detection: true
+      alert_threshold:
+        accuracy_drop: 0.05
+        prediction_drift: 0.10
+      review_frequency: "monthly"
+      next_review_date: "2025-01-15"
+
+  # Example: Fraud Detection Model (Medium Risk)
+  - model_id: "fraud-detection-v1"
+    name: "Transaction Fraud Detection"
+    version: "1.0.3"
+    
+    owner:
+      team: "Security Engineering"
+      contact: "security@example.com"
+      technical_lead: "john.smith@example.com"
+      model_validator: "internal-audit@example.com"
+    
+    risk_tier: "medium"
+    risk_assessment:
+      date: "2024-10-10"
+      reviewer: "internal-audit@example.com"
+      rationale: "Supports fraud prevention, not sole decision maker"
+      business_impact: "Moderate financial risk, customer experience impact"
+      regulatory_scope: ["SR 11-7"]
+    
+    lineage:
+      training_data:
+        - name: "transaction_history"
+          version: "2024-Q3"
+          source: "data-warehouse/transactions"
+          pii_flag: true
+          retention_policy: "5 years"
+      
+      framework: "tensorflow"
+      framework_version: "2.15.0"
+      
+      dependencies:
+        - "tensorflow==2.15.0"
+        - "keras==2.15.0"
+        - "pandas==2.1.0"
+      
+      training_pipeline:
+        repository: "github.com/example/fraud-detection"
+        commit_hash: "f7e8d9c0b1a2"
+        trained_date: "2024-09-15"
+        training_duration: "8 hours"
+    
+    deployment:
+      environment: "production"
+      endpoint: "https://api.example.com/v1/fraud-detection"
+      deployed_date: "2024-10-01"
+      deployment_method: "canary"
+      monitoring_dashboard: "https://monitoring.example.com/fraud"
+    
+    validation:
+      validation_date: "2024-09-20"
+      validation_status: "approved"
+      test_coverage: "92%"
+      performance_metrics:
+        accuracy: 0.96
+        precision: 0.94
+        recall: 0.89
+        f1_score: 0.91
+      
+      bias_testing:
+        performed: true
+        date: "2024-09-18"
+        protected_attributes: ["location", "age"]
+        fairness_metrics:
+          false_positive_parity: 0.89
+    
+    documentation:
+      model_card: "docs/models/fraud-detection-v1-model-card.md"
+      technical_docs: "docs/models/fraud-detection-v1-technical.md"
+      validation_report: "docs/validation/fraud-detection-v1-validation.pdf"
+    
+    monitoring:
+      performance_monitoring: true
+      drift_detection: true
+      alert_threshold:
+        accuracy_drop: 0.03
+        false_positive_rate: 0.15
+      review_frequency: "quarterly"
+      next_review_date: "2025-01-01"
+
+# Risk Tier Definitions (SR 11-7 Alignment)
+risk_tiers:
+  critical:
+    description: "Models with direct regulatory reporting or systemic risk implications"
+    validation_frequency: "monthly"
+    required_approvals: ["Chief Risk Officer", "Model Validation Team", "Compliance"]
+    documentation_requirements: ["Full model validation report", "Regulatory approval", "Board presentation"]
+    
+  high:
+    description: "Models materially affecting financial decisions, credit, or customer outcomes"
+    validation_frequency: "quarterly"
+    required_approvals: ["Model Validation Team", "Compliance", "Business Owner"]
+    documentation_requirements: ["Model validation report", "Risk assessment", "Performance monitoring"]
+    
+  medium:
+    description: "Models supporting decision-making but not primary decision factors"
+    validation_frequency: "semi-annual"
+    required_approvals: ["Technical Lead", "Model Validator"]
+    documentation_requirements: ["Model card", "Test results", "Bias analysis"]
+    
+  low:
+    description: "Models with minimal business or customer impact"
+    validation_frequency: "annual"
+    required_approvals: ["Technical Lead"]
+    documentation_requirements: ["Model card", "Basic validation"]
+
+# Governance Policies
+governance:
+  approval_workflow:
+    - stage: "development"
+      required_artifacts: ["model_card", "technical_documentation"]
+      approvers: ["technical_lead"]
+    
+    - stage: "validation"
+      required_artifacts: ["validation_report", "test_results", "bias_analysis"]
+      approvers: ["model_validator"]
+    
+    - stage: "production"
+      required_artifacts: ["risk_assessment", "deployment_plan", "monitoring_plan"]
+      approvers: ["business_owner", "compliance"]
+  
+  monitoring_requirements:
+    all_models:
+      - "Performance metrics tracking"
+      - "Drift detection"
+      - "Error logging"
+    
+    high_risk_and_above:
+      - "Real-time alerting"
+      - "Bias monitoring"
+      - "Explainability logging"
+      - "Incident response plan"
+  
+  retirement_policy:
+    criteria:
+      - "Performance degradation beyond threshold"
+      - "Better model available"
+      - "Business requirement changed"
+      - "Regulatory non-compliance"
+    
+    process:
+      - "Document reason for retirement"
+      - "Archive model artifacts"
+      - "Update dependent systems"
+      - "Notify stakeholders"
