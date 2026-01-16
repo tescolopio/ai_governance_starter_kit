@@ -100,7 +100,7 @@ analysis_rules:
       severity: "high"
       check:
         type: "pattern"
-        pattern: "(assert|validate|check|verify).*input|data"
+        pattern: "(assert|validate|check|verify).*(input|data)"
       rationale: "Data validation prevents model errors and security issues"
     
     - rule_id: "DATA-003"
@@ -109,7 +109,7 @@ analysis_rules:
       severity: "medium"
       check:
         type: "pattern"
-        pattern: "(delete|remove|cleanup|expire).*data|cache"
+        pattern: "(delete|remove|cleanup|expire).*(data|cache)"
       rationale: "Proper data retention aligns with privacy regulations"
     
     - rule_id: "DATA-004"
@@ -157,7 +157,7 @@ analysis_rules:
       severity: "high"
       check:
         type: "anti-pattern"
-        pattern: "if.*>\\s*0\\.[0-9]{1,2}:|threshold\\s*=\\s*0\\.[0-9]+"
+        pattern: "if.*>\\s*0\\.[0-9]{1,2}:|threshold\\s*=\\s*0\\.[0-9]{1,2}"
       action: "warn"
       rationale: "Hard-coded thresholds should be configurable parameters"
     
