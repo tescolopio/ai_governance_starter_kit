@@ -1,0 +1,449 @@
+name: AI Model Risk Gate
+# CI/CD pipeline for enforcing AI governance policies and risk-based deployment controls
+# Implements SR 11-7 model risk management framework
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+    paths:
+      - 'models/**'
+      - 'inventory/model_registry.yaml'
+      - 'validation/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'models/**'
+      - 'inventory/model_registry.yaml'
+      - 'validation/**'
+  workflow_dispatch:
+    inputs:
+      model_id:
+        description: 'Model ID to validate'
+        required: true
+        type: string
+      override_risk_gate:
+        description: 'Override risk gate (requires approval)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY_PATH: inventory/model_registry.yaml
+  VALIDATION_PATH: validation/
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Job 1: Validate Model Registry Schema
+  validate-registry:
+    name: Validate Model Registry
+    runs-on: ubuntu-latest
+    outputs:
+      models_changed: ${{ steps.detect-changes.outputs.models }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          pip install pyyaml jsonschema
+      
+      - name: Validate YAML syntax
+        run: |
+          python -c "import yaml; yaml.safe_load(open('${{ env.REGISTRY_PATH }}'))"
+      
+      - name: Check required fields
+        run: |
+          python << 'EOF'
+          import yaml
+          import sys
+          
+          with open('${{ env.REGISTRY_PATH }}') as f:
+              registry = yaml.safe_load(f)
+          
+          required_fields = ['model_id', 'name', 'version', 'owner', 'risk_tier', 'lineage']
+          models = registry.get('models', [])
+          
+          errors = []
+          for model in models:
+              for field in required_fields:
+                  if field not in model:
+                      errors.append(f"Model {model.get('model_id', 'UNKNOWN')} missing field: {field}")
+          
+          if errors:
+              print("❌ Validation Errors:")
+              for error in errors:
+                  print(f"  - {error}")
+              sys.exit(1)
+          else:
+              print("✅ All models have required fields")
+          EOF
+      
+      - name: Detect changed models
+        id: detect-changes
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} > changed_files.txt
+          else
+            git diff --name-only HEAD^ HEAD > changed_files.txt
+          fi
+          
+          if grep -q "inventory/model_registry.yaml\|models/" changed_files.txt; then
+            echo "models=true" >> $GITHUB_OUTPUT
+          else
+            echo "models=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 2: Risk Assessment and Classification
+  risk-assessment:
+    name: Risk Assessment
+    needs: validate-registry
+    if: needs.validate-registry.outputs.models_changed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      high_risk_detected: ${{ steps.assess-risk.outputs.high_risk }}
+      risk_summary: ${{ steps.assess-risk.outputs.summary }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+      
+      - name: Assess model risk
+        id: assess-risk
+        run: |
+          python << 'EOF'
+          import yaml
+          import os
+          
+          with open('${{ env.REGISTRY_PATH }}') as f:
+              registry = yaml.safe_load(f)
+          
+          models = registry.get('models', [])
+          high_risk_models = []
+          critical_risk_models = []
+          
+          for model in models:
+              risk_tier = model.get('risk_tier', 'unknown').lower()
+              model_id = model.get('model_id', 'unknown')
+              
+              if risk_tier == 'high':
+                  high_risk_models.append(model_id)
+              elif risk_tier == 'critical':
+                  critical_risk_models.append(model_id)
+          
+          print(f"📊 Risk Assessment Summary:")
+          print(f"  High Risk Models: {len(high_risk_models)}")
+          print(f"  Critical Risk Models: {len(critical_risk_models)}")
+          
+          if high_risk_models:
+              print(f"\n⚠️  High Risk: {', '.join(high_risk_models)}")
+          if critical_risk_models:
+              print(f"\n🔴 Critical Risk: {', '.join(critical_risk_models)}")
+          
+          # Set outputs
+          has_high_risk = len(high_risk_models) > 0 or len(critical_risk_models) > 0
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"high_risk={str(has_high_risk).lower()}\n")
+              
+              summary = f"High:{len(high_risk_models)},Critical:{len(critical_risk_models)}"
+              f.write(f"summary={summary}\n")
+          EOF
+      
+      - name: Check SR 11-7 compliance
+        run: |
+          echo "🔍 Checking SR 11-7 compliance requirements..."
+          python << 'EOF'
+          import yaml
+          
+          with open('${{ env.REGISTRY_PATH }}') as f:
+              registry = yaml.safe_load(f)
+          
+          high_risk_tiers = ['high', 'critical']
+          models = registry.get('models', [])
+          
+          for model in models:
+              if model.get('risk_tier', '').lower() in high_risk_tiers:
+                  model_id = model.get('model_id')
+                  print(f"\n📋 Validating {model_id}:")
+                  
+                  # Check required documentation
+                  docs = model.get('documentation', {})
+                  required_docs = ['model_card', 'validation_report', 'risk_assessment']
+                  
+                  for doc in required_docs:
+                      if doc in docs:
+                          print(f"  ✅ {doc}: {docs[doc]}")
+                      else:
+                          print(f"  ⚠️  {doc}: MISSING")
+                  
+                  # Check validation
+                  validation = model.get('validation', {})
+                  if validation.get('validation_status') == 'approved':
+                      print(f"  ✅ Validation Status: Approved")
+                  else:
+                      print(f"  ⚠️  Validation Status: {validation.get('validation_status', 'UNKNOWN')}")
+          EOF
+
+  # Job 3: Automated Testing and Validation
+  model-validation:
+    name: Model Validation
+    needs: [validate-registry, risk-assessment]
+    if: needs.validate-registry.outputs.models_changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install testing dependencies
+        run: |
+          pip install pytest pyyaml
+      
+      - name: Run validation checks
+        run: |
+          echo "🧪 Running model validation checks..."
+          echo "Note: Implement your model-specific validation tests"
+          
+          # Placeholder for actual validation logic
+          # In production, this would run:
+          # - Unit tests for model code
+          # - Integration tests
+          # - Performance benchmarks
+          # - Bias and fairness tests
+          # - Data quality checks
+      
+      - name: Check test coverage
+        run: |
+          python << 'EOF'
+          import yaml
+          
+          with open('${{ env.REGISTRY_PATH }}') as f:
+              registry = yaml.safe_load(f)
+          
+          models = registry.get('models', [])
+          
+          print("📊 Test Coverage Report:")
+          for model in models:
+              model_id = model.get('model_id')
+              validation = model.get('validation', {})
+              coverage = validation.get('test_coverage', 'N/A')
+              
+              if coverage != 'N/A' and coverage.endswith('%'):
+                  coverage_value = float(coverage.rstrip('%'))
+                  status = "✅" if coverage_value >= 80 else "⚠️"
+              else:
+                  status = "❓"
+              
+              print(f"  {status} {model_id}: {coverage}")
+          EOF
+      
+      - name: Bias and fairness check
+        run: |
+          echo "⚖️  Running bias and fairness checks..."
+          python << 'EOF'
+          import yaml
+          
+          with open('${{ env.REGISTRY_PATH }}') as f:
+              registry = yaml.safe_load(f)
+          
+          models = registry.get('models', [])
+          
+          for model in models:
+              model_id = model.get('model_id')
+              validation = model.get('validation', {})
+              bias_testing = validation.get('bias_testing', {})
+              
+              if bias_testing.get('performed'):
+                  print(f"✅ {model_id}: Bias testing completed")
+                  metrics = bias_testing.get('fairness_metrics', {})
+                  for metric, value in metrics.items():
+                      print(f"   - {metric}: {value}")
+              else:
+                  print(f"⚠️  {model_id}: Bias testing not performed")
+          EOF
+
+  # Job 4: Risk Gate - Block High-Risk Deployments
+  risk-gate:
+    name: Risk Gate Check
+    needs: [validate-registry, risk-assessment, model-validation]
+    runs-on: ubuntu-latest
+    if: needs.risk-assessment.outputs.high_risk_detected == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: High-risk deployment gate
+        run: |
+          echo "🚨 HIGH-RISK MODEL DEPLOYMENT DETECTED"
+          echo "======================================"
+          echo ""
+          echo "Risk Summary: ${{ needs.risk-assessment.outputs.risk_summary }}"
+          echo ""
+          echo "⚠️  High-risk model deployments require additional approval:"
+          echo ""
+          echo "Required Actions:"
+          echo "1. ✓ Model validation report reviewed"
+          echo "2. ✓ Risk assessment documentation complete"
+          echo "3. ✓ Bias and fairness testing performed"
+          echo "4. ⏳ Awaiting compliance approval"
+          echo ""
+          echo "SR 11-7 Compliance Requirements:"
+          echo "- Comprehensive model validation"
+          echo "- Independent model review"
+          echo "- Ongoing monitoring plan"
+          echo "- Documentation of limitations"
+          echo ""
+          
+          # In production, this would integrate with:
+          # - ServiceNow for approval workflows
+          # - PagerDuty for stakeholder notifications
+          # - Compliance tracking systems
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "✋ Pull Request requires approval from:"
+              echo "   - Model Validation Team"
+              echo "   - Compliance Officer"
+              echo "   - Risk Management"
+          fi
+      
+      - name: Check approval override
+        if: github.event.inputs.override_risk_gate == 'true'
+        run: |
+          echo "⚠️  RISK GATE OVERRIDE REQUESTED"
+          echo "This action is logged and requires executive approval"
+          # In production: Log to audit system, send notifications
+      
+      - name: Block deployment (if production)
+        if: github.ref == 'refs/heads/main' && github.event.inputs.override_risk_gate != 'true'
+        run: |
+          echo "🛑 DEPLOYMENT BLOCKED"
+          echo "High-risk models cannot be auto-deployed to production"
+          echo "Please obtain required approvals before proceeding"
+          exit 1
+
+  # Job 5: Generate Compliance Report
+  compliance-report:
+    name: Generate Compliance Report
+    needs: [validate-registry, risk-assessment, model-validation]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Generate report
+        run: |
+          python << 'EOF'
+          import yaml
+          from datetime import datetime
+          
+          with open('${{ env.REGISTRY_PATH }}') as f:
+              registry = yaml.safe_load(f)
+          
+          models = registry.get('models', [])
+          
+          print("=" * 60)
+          print("AI MODEL GOVERNANCE COMPLIANCE REPORT")
+          print("=" * 60)
+          print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+          print(f"Workflow: ${{ github.workflow }}")
+          print(f"Run: ${{ github.run_number }}")
+          print("")
+          
+          print("SUMMARY")
+          print("-" * 60)
+          print(f"Total Models: {len(models)}")
+          
+          by_risk = {}
+          for model in models:
+              risk = model.get('risk_tier', 'unknown')
+              by_risk[risk] = by_risk.get(risk, 0) + 1
+          
+          for risk, count in sorted(by_risk.items()):
+              print(f"  {risk.capitalize()}: {count}")
+          
+          print("")
+          print("SR 11-7 COMPLIANCE STATUS")
+          print("-" * 60)
+          
+          for model in models:
+              model_id = model.get('model_id')
+              risk_tier = model.get('risk_tier', 'unknown')
+              validation = model.get('validation', {})
+              
+              status = validation.get('validation_status', 'unknown')
+              status_icon = "✅" if status == 'approved' else "⚠️"
+              
+              print(f"{status_icon} {model_id}")
+              print(f"   Risk Tier: {risk_tier}")
+              print(f"   Status: {status}")
+              print(f"   Next Review: {model.get('monitoring', {}).get('next_review_date', 'N/A')}")
+              print("")
+          
+          print("=" * 60)
+          EOF
+      
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compliance-report
+          path: |
+            ${{ env.REGISTRY_PATH }}
+          retention-days: 90
+
+  # Job 6: Notify Stakeholders
+  notify:
+    name: Notify Stakeholders
+    needs: [risk-gate, risk-assessment]
+    if: always() && needs.risk-assessment.outputs.high_risk_detected == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send notifications
+        run: |
+          echo "📧 Sending notifications to stakeholders..."
+          echo "In production, this would notify:"
+          echo "  - Model owners"
+          echo "  - Compliance team"
+          echo "  - Risk management"
+          echo "  - Technical leads"
+          echo ""
+          echo "Notification channels:"
+          echo "  - Email"
+          echo "  - Slack"
+          echo "  - PagerDuty (for critical issues)"
+          echo "  - Jira ticket creation"

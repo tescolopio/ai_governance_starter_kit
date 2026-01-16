@@ -1,0 +1,399 @@
+# Code Scalpel Configuration
+# Structural and logic auditing for AI/ML model code
+# Part of AI Governance-as-Code framework
+
+# Configuration version
+version: "1.0.0"
+description: "Code quality and logic auditing configuration for AI/ML models"
+
+# Scope Definition
+scope:
+  # Directories to analyze
+  include_paths:
+    - "models/"
+    - "src/ml/"
+    - "pipelines/"
+    - "inference/"
+  
+  # Directories to exclude
+  exclude_paths:
+    - "**/__pycache__/"
+    - "**/node_modules/"
+    - "**/.venv/"
+    # NOTE: Tests are excluded from this structural/logic governance profile by design.
+    # Test code is validated via separate, test-focused quality and security checks
+    # (e.g., unit-test linters, coverage gates, and CI policies) and is not considered
+    # part of the production model and pipeline code governed by this configuration.
+    - "**/tests/"
+    - "**/*.pyc"
+    - "**/build/"
+    - "**/dist/"
+  
+  # File patterns to analyze
+  file_patterns:
+    - "*.py"
+    - "*.ipynb"
+    - "*.R"
+    - "*.scala"
+    - "*.java"
+
+# Analysis Rules for Model Code Quality
+analysis_rules:
+  
+  # Code Structure and Organization
+  structural:
+    
+    - rule_id: "STR-001"
+      name: "Model Class Structure"
+      description: "Ensure proper model class structure with required methods"
+      severity: "high"
+      check:
+        type: "pattern"
+        pattern: "class.*Model.*:|def (fit|predict|transform)\\("
+      rationale: "Well-structured model classes enable maintainability and testing"
+    
+    - rule_id: "STR-002"
+      name: "Documentation Strings"
+      description: "All model classes and public methods must have docstrings"
+      severity: "medium"
+      check:
+        type: "docstring"
+        required_for: ["class", "function", "method"]
+      rationale: "Documentation is essential for model understanding and SR 11-7 compliance"
+    
+    - rule_id: "STR-003"
+      name: "Type Annotations"
+      description: "Use type hints for function parameters and return values"
+      severity: "medium"
+      check:
+        type: "typing"
+        enforce_hints: true
+      rationale: "Type safety reduces runtime errors and improves code clarity"
+    
+    - rule_id: "STR-004"
+      name: "Code Complexity"
+      description: "Functions should not exceed cyclomatic complexity threshold"
+      severity: "high"
+      check:
+        type: "complexity"
+        max_cyclomatic_complexity: 15
+        max_cognitive_complexity: 20
+      rationale: "Complex code is harder to validate and maintain"
+
+  # Data Handling and Privacy
+  data_governance:
+    
+    - rule_id: "DATA-001"
+      name: "PII Detection"
+      description: "Flag potential handling of Personally Identifiable Information"
+      severity: "critical"
+      check:
+        type: "pattern"
+        patterns:
+          - "ssn|social_security"
+          - "credit_card|card_number"
+          - "email.*address"
+          - "phone.*number"
+          - "date.*birth|dob"
+      action: "flag_for_review"
+      rationale: "PII requires special handling per data protection regulations"
+    
+    - rule_id: "DATA-002"
+      name: "Data Validation"
+      description: "Input data must be validated before processing"
+      severity: "high"
+      check:
+        type: "pattern"
+        pattern: "(assert|validate|check|verify).*(input|data)"
+      rationale: "Data validation prevents model errors and security issues"
+    
+    - rule_id: "DATA-003"
+      name: "Data Retention"
+      description: "Check for proper data cleanup and retention policies"
+      severity: "medium"
+      check:
+        type: "pattern"
+        pattern: "(delete|remove|cleanup|expire).*(data|cache)"
+      rationale: "Proper data retention aligns with privacy regulations"
+    
+    - rule_id: "DATA-004"
+      name: "Data Source Documentation"
+      description: "Data sources should be documented in code"
+      severity: "medium"
+      check:
+        type: "comment"
+        pattern: "@data_source|# Data source:|# Source:"
+      rationale: "Data lineage is crucial for model governance"
+
+  # Model Logic and Behavior
+  logic_auditing:
+    
+    - rule_id: "LOG-001"
+      name: "Random Seed Setting"
+      description: "Random operations should use configurable seeds for reproducibility"
+      severity: "high"
+      check:
+        type: "pattern"
+        pattern: "random\\.seed|np\\.random\\.seed|tf\\.random\\.set_seed|torch\\.manual_seed"
+      rationale: "Reproducibility is essential for model validation and debugging"
+    
+    - rule_id: "LOG-002"
+      name: "Error Handling"
+      description: "Model inference must have proper error handling"
+      severity: "high"
+      check:
+        type: "pattern"
+        pattern: "try:.*except|raise.*Error|logging\\.(error|exception)"
+      rationale: "Robust error handling prevents silent failures in production"
+    
+    - rule_id: "LOG-003"
+      name: "Logging and Observability"
+      description: "Key model operations should be logged"
+      severity: "medium"
+      check:
+        type: "pattern"
+        pattern: "logging\\.(info|debug|warning)|logger\\."
+      rationale: "Logging enables monitoring and debugging in production"
+    
+    - rule_id: "LOG-004"
+      name: "Hard-coded Thresholds"
+      description: "Avoid hard-coded decision thresholds"
+      severity: "high"
+      check:
+        type: "anti-pattern"
+        pattern: "if.*>\\s*0\\.[0-9]{1,2}:|threshold\\s*=\\s*0\\.[0-9]{1,2}"
+      action: "warn"
+      rationale: "Hard-coded thresholds should be configurable parameters"
+    
+    - rule_id: "LOG-005"
+      name: "Model Versioning"
+      description: "Model code should include version information"
+      severity: "medium"
+      check:
+        type: "pattern"
+        pattern: "__version__|MODEL_VERSION|version\\s*="
+      rationale: "Version tracking is critical for model lifecycle management"
+
+  # Security and Safety
+  security:
+    
+    - rule_id: "SEC-001"
+      name: "SQL Injection Risk"
+      description: "Detect potential SQL injection vulnerabilities"
+      severity: "critical"
+      check:
+        type: "anti-pattern"
+        pattern: "execute\\(.*\\+.*\\)|execute\\(.*%.*\\)"
+      action: "block"
+      rationale: "SQL injection can compromise data security"
+    
+    - rule_id: "SEC-002"
+      name: "Pickle Security"
+      description: "Flag use of pickle for model serialization"
+      severity: "high"
+      check:
+        type: "pattern"
+        pattern: "pickle\\.(load|loads)"
+      action: "warn"
+      rationale: "Pickle is vulnerable to arbitrary code execution"
+    
+    - rule_id: "SEC-003"
+      name: "Credentials in Code"
+      description: "Detect hard-coded credentials or API keys"
+      severity: "critical"
+      check:
+        type: "pattern"
+        patterns:
+          - "password\\s*=\\s*['\"]"
+          - "api_key\\s*=\\s*['\"]"
+          - "secret\\s*=\\s*['\"]"
+          - "token\\s*=\\s*['\"]"
+      action: "block"
+      rationale: "Hard-coded credentials are a security vulnerability"
+    
+    - rule_id: "SEC-004"
+      name: "Unsafe Eval"
+      description: "Detect use of eval() or exec()"
+      severity: "critical"
+      check:
+        type: "anti-pattern"
+        pattern: "eval\\(|exec\\("
+      action: "block"
+      rationale: "eval/exec can execute arbitrary code and pose security risks"
+
+  # Bias and Fairness
+  fairness:
+    
+    - rule_id: "FAIR-001"
+      name: "Protected Attributes"
+      description: "Flag use of protected/sensitive attributes in model logic"
+      severity: "high"
+      check:
+        type: "pattern"
+        patterns:
+          - "race|ethnicity"
+          - "gender|sex"
+          - "age"
+          - "religion"
+          - "disability"
+          - "marital_status"
+      action: "flag_for_review"
+      rationale: "Use of protected attributes requires fairness analysis"
+    
+    - rule_id: "FAIR-002"
+      name: "Fairness Metrics"
+      description: "Ensure fairness metrics are computed"
+      severity: "medium"
+      check:
+        type: "pattern"
+        pattern: "(demographic_parity|equal_opportunity|disparate_impact|fairness)"
+      rationale: "Fairness testing is required for high-risk models"
+    
+    - rule_id: "FAIR-003"
+      name: "Proxy Variables"
+      description: "Detect potential proxy variables for protected attributes"
+      severity: "medium"
+      check:
+        type: "pattern"
+        patterns:
+          - "zip_code|postal_code"
+          - "neighborhood|location"
+          - "school|education"
+      action: "flag_for_review"
+      rationale: "Proxy variables can introduce indirect discrimination"
+
+# Automated Actions
+actions:
+  
+  on_violation:
+    critical:
+      - "block_merge"
+      - "create_issue"
+      - "notify_compliance_team"
+      - "log_to_audit_trail"
+    
+    high:
+      - "require_review"
+      - "create_issue"
+      - "notify_technical_lead"
+    
+    medium:
+      - "add_warning_comment"
+      - "log_to_metrics"
+    
+    low:
+      - "log_to_metrics"
+  
+  notifications:
+    channels:
+      - type: "github_comment"
+        enabled: true
+      - type: "slack"
+        enabled: false
+        webhook_url: "${SLACK_WEBHOOK_URL}"
+      - type: "email"
+        enabled: false
+        recipients: ["compliance@example.com"]
+      - type: "jira"
+        enabled: false
+        project: "MODEL-COMPLIANCE"
+
+# Reporting Configuration
+reporting:
+  
+  output_format: "json"
+  
+  generate_reports:
+    - type: "summary"
+      filename: "audit_summary.json"
+    
+    - type: "detailed"
+      filename: "audit_detailed.json"
+    
+    - type: "html"
+      filename: "audit_report.html"
+  
+  metrics_to_track:
+    - "total_violations"
+    - "violations_by_severity"
+    - "violations_by_category"
+    - "code_coverage_analyzed"
+    - "files_analyzed"
+    - "lines_of_code"
+  
+  compliance_scorecard:
+    enabled: true
+    thresholds:
+      critical_violations: 0
+      high_violations: 5
+      medium_violations: 20
+      passing_score: 80
+
+# Integration Settings
+integrations:
+  
+  # Version control integration
+  git:
+    enabled: true
+    pre_commit_hook: true
+    block_on_critical: true
+  
+  # CI/CD integration
+  ci_cd:
+    enabled: true
+    fail_on_critical: true
+    fail_on_high: false
+    artifact_upload: true
+  
+  # Code review integration
+  code_review:
+    enabled: true
+    auto_comment: true
+    require_approval_on_violations: true
+  
+  # Model registry integration
+  model_registry:
+    enabled: true
+    update_on_pass: true
+    registry_path: "../inventory/model_registry.yaml"
+
+# Audit Trail
+audit:
+  enabled: true
+  log_location: "validation/audit_logs/"
+  retention_days: 365
+  include_metadata:
+    - "timestamp"
+    - "user"
+    - "commit_hash"
+    - "files_analyzed"
+    - "violations_found"
+    - "action_taken"
+
+# Custom Rules (Extensibility)
+custom_rules:
+  # Organizations can add their own rules here
+  # Example:
+  # - rule_id: "CUSTOM-001"
+  #   name: "Company-Specific Pattern"
+  #   description: "Check for company-specific coding standards"
+  #   severity: "medium"
+  #   check:
+  #     type: "pattern"
+  #     pattern: "your_pattern_here"
+
+# Comments
+comments:
+  description: |
+    This configuration file defines the structural and logic auditing rules
+    for AI/ML model code as part of the governance framework. It integrates
+    with the CI/CD pipeline to enforce code quality and compliance standards
+    aligned with SR 11-7 model risk management principles.
+    
+    Usage:
+    1. Customize rules based on your organization's requirements
+    2. Adjust severity levels and actions as needed
+    3. Enable/disable integrations based on your toolchain
+    4. Add custom rules for organization-specific patterns
+    
+    For more information, see the README.md file.
