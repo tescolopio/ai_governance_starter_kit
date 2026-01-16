@@ -428,7 +428,7 @@ jobs:
   # Job 6: Notify Stakeholders
   notify:
     name: Notify Stakeholders
-    needs: [risk-gate]
+    needs: [risk-gate, risk-assessment]
     if: always() && needs.risk-assessment.outputs.high_risk_detected == 'true'
     runs-on: ubuntu-latest
     

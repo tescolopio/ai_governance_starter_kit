@@ -20,6 +20,10 @@ scope:
     - "**/__pycache__/"
     - "**/node_modules/"
     - "**/.venv/"
+    # NOTE: Tests are excluded from this structural/logic governance profile by design.
+    # Test code is validated via separate, test-focused quality and security checks
+    # (e.g., unit-test linters, coverage gates, and CI policies) and is not considered
+    # part of the production model and pipeline code governed by this configuration.
     - "**/tests/"
     - "**/*.pyc"
     - "**/build/"
