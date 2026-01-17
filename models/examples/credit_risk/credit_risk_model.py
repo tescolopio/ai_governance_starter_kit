@@ -14,14 +14,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
-    classification_report, roc_auc_score, confusion_matrix,
-    roc_curve, precision_recall_curve
+    classification_report, roc_auc_score, confusion_matrix
 )
 import joblib
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -228,8 +227,18 @@ class CreditRiskModel:
         train_proba = self.model.predict_proba(X_train_scaled)[:, 1]
         train_predictions = (train_proba >= self.decision_threshold).astype(int)
 
+        # Detailed training metrics
+        train_report = classification_report(y_train, train_predictions, output_dict=True)
+
         metrics = {
-            'train_auc': float(roc_auc_score(y_train, train_proba))
+            'train_auc': float(roc_auc_score(y_train, train_proba)),
+            'train_precision': float(train_report['1']['precision']),
+            'train_recall': float(train_report['1']['recall']),
+            'train_f1': float(train_report['1']['f1-score']),
+            'train_accuracy': float(train_report['accuracy']),
+            # Business metrics on training data
+            'train_approval_rate': float(1 - train_predictions.mean()),  # % approved
+            'train_default_capture_rate': float(train_report['1']['recall'])  # % of defaults caught
         }
 
         # Evaluate on validation set if provided

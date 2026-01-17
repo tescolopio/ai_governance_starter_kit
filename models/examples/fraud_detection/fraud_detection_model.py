@@ -18,7 +18,7 @@ import joblib
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Dict, Tuple
 
 # Configure logging
 logging.basicConfig(
@@ -147,7 +147,7 @@ class FraudDetectionModel:
         self.metadata['feature_count'] = len(self.feature_names)
 
         # Evaluate on training set
-        train_predictions = self.model.predict(X_train_scaled)
+
         train_proba = self.model.predict_proba(X_train_scaled)[:, 1]
 
         metrics = {

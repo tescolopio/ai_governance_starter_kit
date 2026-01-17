@@ -9,7 +9,7 @@ governance requirements. It's used as a pre-commit hook and in CI/CD.
 import sys
 import yaml
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict
 
 
 # Colors for terminal output
