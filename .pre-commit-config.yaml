@@ -1,0 +1,118 @@
+# Pre-commit hooks for AI Governance Starter Kit
+#
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # YAML validation
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+        name: Validate YAML syntax
+        args: ['--safe']
+        files: \.(yaml|yml)$
+
+      - id: check-json
+        name: Validate JSON syntax
+        files: \.json$
+
+      - id: end-of-file-fixer
+        name: Fix end of files
+        exclude: \.pkl$
+
+      - id: trailing-whitespace
+        name: Remove trailing whitespace
+        exclude: \.pkl$
+
+      - id: check-added-large-files
+        name: Check for large files
+        args: ['--maxkb=1000']
+        exclude: \.pkl$
+
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+
+      - id: detect-private-key
+        name: Detect private keys
+
+  # Python formatting and linting
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        name: Format Python code with Black
+        language_version: python3
+        files: \.py$
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        name: Lint Python code with Flake8
+        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
+        files: \.py$
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: Sort Python imports
+        args: ['--profile', 'black']
+        files: \.py$
+
+  # Model Registry Validation (custom)
+  - repo: local
+    hooks:
+      - id: validate-model-registry
+        name: Validate Model Registry
+        entry: python scripts/validate_registry.py
+        language: system
+        files: inventory/model_registry\.yaml$
+        pass_filenames: false
+
+      - id: check-model-documentation
+        name: Check Model Documentation Exists
+        entry: python scripts/check_documentation.py
+        language: system
+        files: inventory/model_registry\.yaml$
+        pass_filenames: false
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        name: Check for security issues
+        args: ['-r', 'models/', 'scripts/']
+        files: \.py$
+
+  # Notebook checks (if using Jupyter notebooks)
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.1
+    hooks:
+      - id: nbqa-black
+        name: Format Jupyter notebooks
+        files: \.ipynb$
+
+      - id: nbqa-isort
+        name: Sort imports in notebooks
+        files: \.ipynb$
+
+# Global settings
+default_language_version:
+  python: python3.9
+
+# Files to exclude from all hooks
+exclude: |
+  (?x)^(
+      \.git/|
+      \.venv/|
+      venv/|
+      __pycache__/|
+      \.pytest_cache/|
+      \.coverage|
+      .*\.egg-info/|
+      .*\.pkl$|
+      .*\.joblib$
+  )

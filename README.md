@@ -39,21 +39,77 @@ Reactive risk management       →    Proactive prevention
 - ✅ **Scalable** - Supports hundreds of models without manual overhead
 - ✅ **Collaborative** - Engineers and risk teams work from the same source of truth
 
+## 🎬 Getting Started
+
+**New to the starter kit? Start here:**
+
+- **[Quick Start Guide](QUICK_START.md)** - Get up and running in 5 minutes
+- **[Example Models](models/examples/)** - Working fraud detection and credit risk models
+- **[Documentation Templates](docs/templates/)** - Ready-to-use model card, technical docs, validation reports
+- **[Test Suite](tests/)** - Comprehensive tests for registry validation and model quality
+- **[Risk Assessment Worksheet](docs/templates/risk_assessment_worksheet.md)** - Classify your model's risk tier
+
+**Quick commands:**
+```bash
+# One-command setup
+bash scripts/setup.sh
+
+# Or use Make targets
+make help            # See all available commands
+make validate        # Validate model registry
+make test            # Run all tests
+make train-examples  # Train example models
+```
+
 ## 📋 Repository Structure
 
 ```
 ai_governance_starter_kit/
+├── README.md                        # Main documentation
+├── QUICK_START.md                   # Quick start guide
+├── Makefile                         # Common development commands
+├── requirements.txt                 # Runtime dependencies
+├── requirements-dev.txt             # Development dependencies
+├── .pre-commit-config.yaml          # Pre-commit hooks configuration
+│
 ├── inventory/
-│   └── model_registry.yaml          # Central model registry
-├── .github/
-│   └── workflows/
-│       └── risk-gate.yml            # CI/CD risk gate workflow
+│   └── model_registry.yaml          # Central model registry (source of truth)
+│
+├── docs/
+│   └── templates/                   # Documentation templates
+│       ├── model_card.md            # Model card template
+│       ├── technical_documentation.md  # Technical docs template
+│       ├── validation_report.md     # Validation report template
+│       └── risk_assessment_worksheet.md  # Risk assessment guide
+│
+├── models/
+│   └── examples/                    # Example model implementations
+│       ├── fraud_detection/         # Medium-risk fraud detection model
+│       │   ├── fraud_detection_model.py
+│       │   ├── README.md
+│       │   └── requirements.txt
+│       └── credit_risk/             # High-risk credit risk model
+│           ├── credit_risk_model.py
+│           ├── README.md
+│           └── requirements.txt
+│
+├── tests/                           # Comprehensive test suite
+│   ├── test_registry_validation.py  # Registry validation tests
+│   ├── test_model_performance.py    # Model quality tests
+│   └── README.md                    # Testing documentation
+│
+├── scripts/                         # Utility scripts
+│   ├── setup.sh                     # One-command setup script
+│   ├── validate_registry.py         # Registry validation
+│   └── check_documentation.py       # Documentation completeness check
+│
 ├── validation/
 │   └── structural/
-│       └── code_scalpel_config.yaml # Code auditing configuration
-├── docs/                            # Documentation (model cards, etc.)
-├── models/                          # Model code and artifacts
-└── README.md                        # This file
+│       └── code_scalpel_config.yaml # Code auditing rules (25+ rules)
+│
+└── .github/
+    └── workflows/
+        └── risk-gate.yml            # CI/CD risk gate workflow
 ```
 
 ## 🚀 Quick Start
