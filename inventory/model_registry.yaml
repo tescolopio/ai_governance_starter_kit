@@ -11,14 +11,17 @@ models:
   - model_id: "credit-risk-v2"
     name: "Credit Risk Assessment Model"
     version: "2.1.0"
-    
+    description: "XGBoost-based credit risk assessment model for lending decisions with regulatory compliance"
+    model_type: "classification"
+    framework: "scikit-learn"
+
     # Ownership & Accountability
     owner:
       team: "Risk Analytics"
       contact: "risk-analytics@example.com"
       technical_lead: "jane.doe@example.com"
-      model_validator: "compliance-team@example.com"
-    
+      validator: "compliance-team@example.com"
+
     # Risk Classification (SR 11-7 Tier System)
     risk_tier: "high"  # Options: low, medium, high, critical
     risk_assessment:
@@ -86,7 +89,17 @@ models:
         performed: true
         scenarios: ["recession", "default_spike", "data_drift"]
         results: "passed"
-    
+
+    # Testing & Quality Assurance
+    testing:
+      bias_testing:
+        performed: true
+        date: "2024-11-22"
+        protected_attributes: ["race", "gender", "age"]
+        fairness_metrics:
+          demographic_parity: 0.92
+          equal_opportunity: 0.94
+
     # Documentation & Compliance
     documentation:
       model_card: "docs/models/credit-risk-v2-model-card.md"
@@ -108,13 +121,16 @@ models:
   - model_id: "fraud-detection-v1"
     name: "Transaction Fraud Detection"
     version: "1.0.3"
-    
+    description: "Random Forest model for real-time transaction fraud detection and prevention"
+    model_type: "classification"
+    framework: "tensorflow"
+
     owner:
       team: "Security Engineering"
       contact: "security@example.com"
       technical_lead: "john.smith@example.com"
-      model_validator: "internal-audit@example.com"
-    
+      validator: "internal-audit@example.com"
+
     risk_tier: "medium"
     risk_assessment:
       date: "2024-10-10"
@@ -168,7 +184,16 @@ models:
         protected_attributes: ["location", "age"]
         fairness_metrics:
           false_positive_parity: 0.89
-    
+
+    # Testing & Quality Assurance
+    testing:
+      bias_testing:
+        performed: true
+        date: "2024-09-18"
+        protected_attributes: ["location", "age"]
+        fairness_metrics:
+          false_positive_parity: 0.89
+
     documentation:
       model_card: "docs/models/fraud-detection-v1-model-card.md"
       technical_docs: "docs/models/fraud-detection-v1-technical.md"
@@ -210,20 +235,41 @@ risk_tiers:
     documentation_requirements: ["Model card", "Basic validation"]
 
 # Governance Policies
-governance:
+governance_policies:
+  approval_workflows:
+    low:
+      required_approvals: ["Technical Lead"]
+      required_artifacts: ["model_card", "basic_validation"]
+      review_frequency: "annual"
+
+    medium:
+      required_approvals: ["Technical Lead", "Model Validator"]
+      required_artifacts: ["model_card", "test_results", "bias_analysis"]
+      review_frequency: "semi-annual"
+
+    high:
+      required_approvals: ["Model Validation Team", "Compliance", "Business Owner"]
+      required_artifacts: ["model_card", "validation_report", "risk_assessment", "bias_analysis"]
+      review_frequency: "quarterly"
+
+    critical:
+      required_approvals: ["Chief Risk Officer", "Model Validation Team", "Compliance"]
+      required_artifacts: ["full_validation_report", "regulatory_approval", "board_presentation", "risk_assessment"]
+      review_frequency: "monthly"
+
   approval_workflow:
     - stage: "development"
       required_artifacts: ["model_card", "technical_documentation"]
       approvers: ["technical_lead"]
-    
+
     - stage: "validation"
       required_artifacts: ["validation_report", "test_results", "bias_analysis"]
       approvers: ["model_validator"]
-    
+
     - stage: "production"
       required_artifacts: ["risk_assessment", "deployment_plan", "monitoring_plan"]
       approvers: ["business_owner", "compliance"]
-  
+
   monitoring_requirements:
     all_models:
       - "Performance metrics tracking"
