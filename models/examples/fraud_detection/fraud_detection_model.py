@@ -101,7 +101,7 @@ class FraudDetectionModel:
         features['day_of_week'] = features['timestamp'].dt.dayofweek
         features['is_weekend'] = features['day_of_week'].isin([5, 6]).astype(int)
 
-        # User behavior features - count transactions per user (simplified)
+        # User behavior feature - cumulative count of transactions per user (name kept for backward compatibility)
         features['transactions_last_24h'] = features.groupby('user_id').cumcount() + 1
 
         logger.info(f"Engineered {len(features.columns)} features from raw data")

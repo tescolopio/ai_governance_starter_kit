@@ -91,14 +91,7 @@ models:
         results: "passed"
 
     # Testing & Quality Assurance
-    testing:
-      bias_testing:
-        performed: true
-        date: "2024-11-22"
-        protected_attributes: ["race", "gender", "age"]
-        fairness_metrics:
-          demographic_parity: 0.92
-          equal_opportunity: 0.94
+    testing: {}
 
     # Documentation & Compliance
     documentation:
