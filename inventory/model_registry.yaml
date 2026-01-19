@@ -250,19 +250,6 @@ governance_policies:
       required_artifacts: ["full_validation_report", "regulatory_approval", "board_presentation", "risk_assessment"]
       review_frequency: "monthly"
 
-  approval_workflow:
-    - stage: "development"
-      required_artifacts: ["model_card", "technical_documentation"]
-      approvers: ["technical_lead"]
-
-    - stage: "validation"
-      required_artifacts: ["validation_report", "test_results", "bias_analysis"]
-      approvers: ["model_validator"]
-
-    - stage: "production"
-      required_artifacts: ["risk_assessment", "deployment_plan", "monitoring_plan"]
-      approvers: ["business_owner", "compliance"]
-
   monitoring_requirements:
     all_models:
       - "Performance metrics tracking"
