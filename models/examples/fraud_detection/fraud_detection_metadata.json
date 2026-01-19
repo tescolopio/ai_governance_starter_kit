@@ -1,0 +1,16 @@
+{
+  "model_id": "fraud-detection-v1",
+  "model_version": "1.0.0",
+  "risk_tier": "medium",
+  "created_at": null,
+  "trained_at": "2026-01-19T18:54:11.246805",
+  "performance_metrics": {
+    "train_auc": 0.9862477828045281,
+    "val_auc": 0.951969068877551,
+    "val_precision": 0.16993464052287582,
+    "val_recall": 0.8125,
+    "val_f1": 0.2810810810810811
+  },
+  "training_samples": 6400,
+  "feature_count": 5
+}
