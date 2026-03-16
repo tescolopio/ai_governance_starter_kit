@@ -204,6 +204,42 @@ class TestHighRiskRequirements:
                     f"High/Critical risk model {model['model_id']} missing bias testing info"
 
 
+class TestRegistryConsistency:
+    """Test that registry metadata stays internally consistent."""
+
+    def test_lineage_framework_matches_model_framework(self, models):
+        """Test that lineage framework matches the model framework when present."""
+        for model in models:
+            lineage = model.get('lineage', {})
+            if 'framework' in lineage:
+                assert lineage['framework'] == model['framework'], \
+                    f"Model {model['model_id']} has mismatched framework metadata"
+
+    def test_fraud_detection_dependencies_match_scikit_learn(self, models):
+        """Test that fraud detection metadata matches its scikit-learn implementation."""
+        fraud_model = next(model for model in models if model['model_id'] == 'fraud-detection-v1')
+        dependencies = fraud_model.get('lineage', {}).get('dependencies', [])
+
+        assert fraud_model['framework'] == 'scikit-learn'
+        assert fraud_model['lineage']['framework'] == 'scikit-learn'
+        assert any(dep.startswith('scikit-learn==') for dep in dependencies), \
+            "Fraud detection dependencies must include scikit-learn"
+        assert all(
+            not dep.startswith(('tensorflow==', 'keras=='))
+            for dep in dependencies
+        ), "Fraud detection dependencies should not reference tensorflow or keras"
+
+    def test_bias_testing_is_not_duplicated_between_validation_and_testing(self, models):
+        """Test that bias testing is documented in one place only."""
+        for model in models:
+            validation = model.get('validation', {})
+            testing = model.get('testing', {})
+
+            assert not (
+                'bias_testing' in validation and 'bias_testing' in testing
+            ), f"Model {model['model_id']} duplicates bias testing in validation and testing"
+
+
 class TestVersioning:
     """Test version format and consistency."""
 

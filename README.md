@@ -342,7 +342,8 @@ models:
         accuracy: 0.00
         precision: 0.00
         recall: 0.00
-      
+
+    testing:
       bias_testing:
         performed: true|false
         protected_attributes: ["List of attributes"]
