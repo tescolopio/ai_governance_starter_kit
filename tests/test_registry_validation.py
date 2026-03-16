@@ -222,10 +222,14 @@ class TestRegistryConsistency:
             None,
         )
         assert fraud_model is not None, "Registry is missing fraud-detection-v1"
-        dependencies = fraud_model.get('lineage', {}).get('dependencies', [])
+        lineage = fraud_model.get('lineage')
+        assert isinstance(lineage, dict), \
+            "fraud-detection-v1 must define a 'lineage' mapping"
+        dependencies = lineage.get('dependencies', [])
 
         assert fraud_model['framework'] == 'scikit-learn'
-        assert fraud_model['lineage']['framework'] == 'scikit-learn'
+        assert lineage.get('framework') == 'scikit-learn', \
+            "fraud-detection-v1 lineage.framework must be 'scikit-learn'"
         assert any(dep.startswith('scikit-learn==') for dep in dependencies), \
             "Fraud detection dependencies must include scikit-learn"
         assert all(
