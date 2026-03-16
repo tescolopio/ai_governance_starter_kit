@@ -77,6 +77,13 @@ models:
         f1_score: 0.89
         auc_roc: 0.93
       
+      stress_testing:
+        performed: true
+        scenarios: ["recession", "default_spike", "data_drift"]
+        results: "passed"
+
+    # Testing & Quality Assurance
+    testing:
       bias_testing:
         performed: true
         date: "2024-11-22"
@@ -84,14 +91,6 @@ models:
         fairness_metrics:
           demographic_parity: 0.92
           equal_opportunity: 0.94
-      
-      stress_testing:
-        performed: true
-        scenarios: ["recession", "default_spike", "data_drift"]
-        results: "passed"
-
-    # Testing & Quality Assurance
-    testing: {}
 
     # Documentation & Compliance
     documentation:
@@ -116,7 +115,7 @@ models:
     version: "1.0.3"
     description: "Random Forest model for real-time transaction fraud detection and prevention"
     model_type: "classification"
-    framework: "tensorflow"
+    framework: "scikit-learn"
 
     owner:
       team: "Security Engineering"
@@ -140,13 +139,14 @@ models:
           pii_flag: true
           retention_policy: "5 years"
       
-      framework: "tensorflow"
-      framework_version: "2.15.0"
+      framework: "scikit-learn"
+      framework_version: "1.3.0"
       
       dependencies:
-        - "tensorflow==2.15.0"
-        - "keras==2.15.0"
+        - "numpy==1.24.0"
         - "pandas==2.1.0"
+        - "scikit-learn==1.3.0"
+        - "joblib==1.3.0"
       
       training_pipeline:
         repository: "github.com/example/fraud-detection"
@@ -171,13 +171,6 @@ models:
         recall: 0.89
         f1_score: 0.91
       
-      bias_testing:
-        performed: true
-        date: "2024-09-18"
-        protected_attributes: ["location", "age"]
-        fairness_metrics:
-          false_positive_parity: 0.89
-
     # Testing & Quality Assurance
     testing:
       bias_testing:
