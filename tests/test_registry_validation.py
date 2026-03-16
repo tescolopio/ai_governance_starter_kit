@@ -217,7 +217,11 @@ class TestRegistryConsistency:
 
     def test_fraud_detection_dependencies_match_scikit_learn(self, models):
         """Test that fraud detection metadata matches its scikit-learn implementation."""
-        fraud_model = next(model for model in models if model['model_id'] == 'fraud-detection-v1')
+        fraud_model = next(
+            (model for model in models if model['model_id'] == 'fraud-detection-v1'),
+            None,
+        )
+        assert fraud_model is not None, "Registry is missing fraud-detection-v1"
         dependencies = fraud_model.get('lineage', {}).get('dependencies', [])
 
         assert fraud_model['framework'] == 'scikit-learn'
